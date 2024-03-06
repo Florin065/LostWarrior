@@ -1,0 +1,10 @@
+Bin/
+Build/
+
+.cache/
+
+.direnv/
+.envrc
+
+compile_commands.json
+
