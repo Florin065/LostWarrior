@@ -16,6 +16,7 @@
           buildInputs = [
             gcc
             glfw
+            glm
 
             bear
           ];

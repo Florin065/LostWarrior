@@ -52,6 +52,16 @@ public:
         glfwPollEvents();
     }
 
+    int WindowShouldClose() const
+    {
+        return glfwWindowShouldClose(mWindow.get());
+    }
+
+    void SetWindowShouldClose()
+    {
+        glfwSetWindowShouldClose(mWindow.get(), GLFW_TRUE);
+    }
+
 private:
     struct GLFWwindowDestroy
     {
