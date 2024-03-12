@@ -1,3 +1,5 @@
+#include "Components/Renderable.hpp"
+
 #include "Systems/RenderSystem.hpp"
 
 #include "Core/Coordinator.hpp"
@@ -19,6 +21,8 @@ void RenderSystem::Update(float dt)
 
     for (auto const& entity : mEntities)
     {
-        (void) entity;
+        auto renderable = gCoordinator.GetComponent<Renderable>(entity);
+
+        renderable.mesh->Render();
     }
 }

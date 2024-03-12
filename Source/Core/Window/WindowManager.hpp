@@ -11,7 +11,7 @@
 #include "Core/Coordinator.hpp"
 
 
-extern const Coordinator gCoordinator;
+extern Coordinator gCoordinator;
 
 
 class WindowManager

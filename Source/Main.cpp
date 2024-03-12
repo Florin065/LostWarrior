@@ -1,17 +1,19 @@
 #include <chrono>
+#include <glm/glm.hpp>
 
 #include "Core/Coordinator.hpp"
 #include "Core/Types.hpp"
-
-#define GLAD_GL_IMPLEMENTATION
-#include "Core/Window/WindowManager.hpp"
 
 #include "Components/Transform.hpp"
 #include "Components/Renderable.hpp"
 
 #include "Systems/RenderSystem.hpp"
 
-const Coordinator gCoordinator(LogLevel::NORMAL);
+#define GLAD_GL_IMPLEMENTATION
+#include "Core/Window/WindowManager.hpp"
+
+
+Coordinator gCoordinator(LogLevel::NORMAL);
 
 static auto sWindowManager = std::make_unique<WindowManager>(1920, 1080, "Game");
 
@@ -40,6 +42,16 @@ int main(void)
         signature.set(gCoordinator.GetComponentType<Renderable>());
     }
     renderSystem->Init();
+
+    Entity test = gCoordinator.CreateEntity();
+    gCoordinator.AddComponent(test, Transform{});
+    gCoordinator.AddComponent(test, Renderable {
+        .mesh = std::make_shared<Mesh>(std::vector<Vertex> {
+            Vertex(glm::vec3(0.5f, 0.0f, 0.0f)),
+            Vertex(glm::vec3(0.0f, 0.5f, 0.0f)),
+            Vertex(glm::vec3(0.0f, 0.0f, 0.0f))
+        })
+    });
 
     float dt = 0.0f;
     while (!sWindowManager->WindowShouldClose())
