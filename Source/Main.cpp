@@ -13,7 +13,7 @@
 #include "Core/Window/WindowManager.hpp"
 
 
-Coordinator gCoordinator(LogLevel::NORMAL);
+Coordinator gCoordinator(LogLevel::DEBUG);
 
 static auto sWindowManager = std::make_unique<WindowManager>(1920, 1080, "Game");
 
@@ -43,15 +43,26 @@ int main(void)
     }
     renderSystem->Init();
 
+#if 1
     Entity test = gCoordinator.CreateEntity();
     gCoordinator.AddComponent(test, Transform{});
     gCoordinator.AddComponent(test, Renderable {
-        .mesh = std::make_shared<Mesh>(std::vector<Vertex> {
-            Vertex(glm::vec3(0.5f, 0.0f, 0.0f)),
-            Vertex(glm::vec3(0.0f, 0.5f, 0.0f)),
-            Vertex(glm::vec3(0.0f, 0.0f, 0.0f))
-        })
+        .mesh = std::make_shared<Mesh>(
+            std::vector<Vertex> {
+                Vertex(glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
+                Vertex(glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
+                Vertex(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f))
+            },
+            std::vector<GLuint> {
+                0, 1, 2
+            }
+        ),
+        .shader = std::make_shared<Shader>(
+            "Assets/Shaders/vertex.glsl",
+            "Assets/Shaders/fragment.glsl"
+        )
     });
+#endif
 
     float dt = 0.0f;
     while (!sWindowManager->WindowShouldClose())
@@ -63,7 +74,6 @@ int main(void)
 
         auto stopTime = std::chrono::high_resolution_clock::now();
         dt = std::chrono::duration<float, std::chrono::seconds::period>(stopTime - startTime).count();
-        gCoordinator.LogDebug("fps = ", 1.0f / dt);
     }
     renderSystem->Shutdown();
 

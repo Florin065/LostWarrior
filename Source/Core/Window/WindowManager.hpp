@@ -36,6 +36,9 @@ public:
 
         glViewport(0, 0, width, height);
         gCoordinator.LogInfo("Viewport set to (", width, " ", height, ")");
+
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(CallbackMessage, 0);
     }
 
     ~WindowManager()
@@ -108,6 +111,40 @@ private:
                     .SetParam(Events::Input::Async::Key::SCANCODE, scancode)
                     .SetParam(Events::Input::Async::Key::ACTION, action)
                     .SetParam(Events::Input::Async::Key::MODS, mods));
+    }
+
+    static void GLAPIENTRY CallbackMessage([[maybe_unused]] GLenum source,
+                                           GLenum type,
+                                           [[maybe_unused]] GLuint id,
+                                           GLuint severity,
+                                           [[maybe_unused]] GLsizei length,
+                                           const char* message,
+                                           [[maybe_unused]] const void* userParam)
+    {
+        if (type == GL_DEBUG_TYPE_ERROR || severity == GL_DEBUG_SEVERITY_HIGH)
+        {
+            gCoordinator.LogError("GL Error: ", message);
+        }
+        else
+        {
+            switch (severity) {
+            case GL_DEBUG_SEVERITY_MEDIUM:
+                gCoordinator.LogInfo("GL Warning(major): ", message);
+                break;
+            case GL_DEBUG_SEVERITY_LOW:
+                gCoordinator.LogInfo("GL Warning(minor): ", message);
+                break;
+            case GL_DEBUG_SEVERITY_NOTIFICATION:
+                gCoordinator.LogDebug("GL Notification: ", message);
+                break;
+            default:
+                #if defined(_MSC_VER) && !defined(__clang__) // MSVC
+                    __assume(false);
+                #else
+                    __builtin_unreachable();
+                #endif
+            }
+        }
     }
 };
 

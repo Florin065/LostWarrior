@@ -4,13 +4,8 @@
 
 #include "glad/gl.h"
 
-#include "Core/Coordinator.hpp"
 #include "Core/Graphics/Vertex.hpp"
 #include "Core/Graphics/Utils.hpp"
-
-
-extern Coordinator gCoordinator;
-
 
 class Mesh
 {
