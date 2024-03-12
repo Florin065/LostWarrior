@@ -60,7 +60,7 @@ public:
          const GLenum renderMode = GL_TRIANGLES,
          const GLenum glDrawMode = GL_STATIC_DRAW,
          const GLenum normalized = GL_FALSE)
-    : mRenderer(__RenderV)
+    : mRenderer(__RenderI)
     , mRenderMode(renderMode)
     , mVerticesSize(vertices.size())
     , mIndicesSize(indices.size())
