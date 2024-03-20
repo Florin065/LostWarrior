@@ -17,6 +17,7 @@
             gcc
             glfw
             glm
+            assimp
 
             bear
           ];

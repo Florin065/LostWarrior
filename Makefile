@@ -2,7 +2,7 @@ TARGET = game
 
 CC     = g++
 INC    = -IInclude -ISource
-LIBS   = -lGL -lglfw
+LIBS   = -lGL -lglfw -lassimp
 CFLAGS = -std=c++23 -Wall -Wextra -pedantic
 
 SOURCE_DIR = Source

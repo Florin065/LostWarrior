@@ -32,7 +32,12 @@ public:
         gladLoadGL(glfwGetProcAddress); 
 
         glfwSetKeyCallback(mWindow.get(), CallbackKey);
+        glfwSetCursorPosCallback(mWindow.get(), CallbackCursorPos);
         glfwSetFramebufferSizeCallback(mWindow.get(), CallbackFramebufferSize);
+
+        glfwSwapInterval(1);
+
+        glfwSetInputMode(mWindow.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glViewport(0, 0, width, height);
         gCoordinator.LogInfo("Viewport set to (", width, " ", height, ")");
@@ -111,6 +116,30 @@ private:
                     .SetParam(Events::Input::Async::Key::SCANCODE, scancode)
                     .SetParam(Events::Input::Async::Key::ACTION, action)
                     .SetParam(Events::Input::Async::Key::MODS, mods));
+    }
+
+    static void CallbackCursorPos(GLFWwindow* window, double xpos, double ypos)
+    {
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+
+        auto map = [](float x, float l, float a) { return (x / l) * 2 * a - a; };
+
+        const float mappedX = map(xpos, width, static_cast<float>(width) / height);
+        const float mappedY = map(ypos, height, -1);
+
+        static float lastMappedX = mappedX;
+        static float lastMappedY = mappedY;
+
+        Event event(Events::Input::Cursor::ID);
+        event.SetParam(Events::Input::Cursor::XPOS, mappedX);
+        event.SetParam(Events::Input::Cursor::YPOS, mappedY);
+        event.SetParam(Events::Input::Cursor::DX, mappedX - lastMappedX);
+        event.SetParam(Events::Input::Cursor::DY, mappedY - lastMappedY);
+        gCoordinator.SendEvent(event);
+
+        lastMappedX = mappedX;
+        lastMappedY = mappedY;
     }
 
     static void GLAPIENTRY CallbackMessage([[maybe_unused]] GLenum source,
