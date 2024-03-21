@@ -12,6 +12,6 @@ public:
     void Update(float dt);
 
 private:
-    float mDt;
+    Entity mCameraEntity;
 };
 

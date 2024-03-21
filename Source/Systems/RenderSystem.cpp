@@ -1,9 +1,12 @@
 #include "glad/gl.h"
 
+#include "Core/Coordinator.hpp"
+
 #include "Components/Renderable.hpp"
 #include "Components/Transform.hpp"
+#include "Components/Camera.hpp"
+
 #include "Systems/RenderSystem.hpp"
-#include "Core/Coordinator.hpp"
 
 
 extern Coordinator gCoordinator;
@@ -11,7 +14,17 @@ extern Coordinator gCoordinator;
 
 void RenderSystem::Init()
 {
+    {
+        Transform cameraT;
+        cameraT.SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 
+        Camera cameraC;
+
+        mCameraEntity = gCoordinator.CreateEntity();
+        gCoordinator.AddComponent(mCameraEntity, cameraT);
+        gCoordinator.AddComponent(mCameraEntity, cameraC);
+        gCoordinator.LogInfo("Initial camera created!");
+    }
 }
 
 void RenderSystem::Shutdown()
@@ -19,12 +32,12 @@ void RenderSystem::Shutdown()
 
 }
 
-void RenderSystem::Update(float dt)
+void RenderSystem::Update([[maybe_unused]] float dt)
 {
-    mDt = dt;
-
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    auto& cameraC = gCoordinator.GetComponent<Camera>(mCameraEntity);
 
     for (auto const& entity : mEntities)
     {
@@ -33,6 +46,8 @@ void RenderSystem::Update(float dt)
 
         renderable.shader->Activate();
         renderable.shader->SetUniform("Model", transform.model);
+        renderable.shader->SetUniform("View", cameraC.view);
+        renderable.shader->SetUniform("Projection", cameraC.projection);
         renderable.model->Draw(renderable.shader);
     }
 }

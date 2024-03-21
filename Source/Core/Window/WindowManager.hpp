@@ -36,6 +36,8 @@ public:
         glfwSetFramebufferSizeCallback(mWindow.get(), CallbackFramebufferSize);
 
         glfwSwapInterval(1);
+        
+        glDisable(GL_CULL_FACE);
 
         glfwSetInputMode(mWindow.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 

@@ -7,8 +7,10 @@
 
 #include "Components/Transform.hpp"
 #include "Components/Renderable.hpp"
+#include "Components/Camera.hpp"
 
 #include "Systems/RenderSystem.hpp"
+#include "Systems/CameraSystem.hpp"
 
 #define GLAD_GL_IMPLEMENTATION
 #include "Core/Window/WindowManager.hpp"
@@ -35,7 +37,21 @@ int main(void)
 
     gCoordinator.RegisterComponent<Transform>();
     gCoordinator.RegisterComponent<Renderable>();
+    gCoordinator.RegisterComponent<Camera>();
 
+    auto cameraSystem = gCoordinator.RegisterSystem<CameraSystem>();
+    {
+        Signature signature;
+        signature.set(gCoordinator.GetComponentType<Transform>());
+        signature.set(gCoordinator.GetComponentType<Camera>());
+        gCoordinator.SetSystemSignature<CameraSystem>(signature);
+    }
+    cameraSystem->Init();
+
+    /* Render system must be initialized AFTER the camera system, as its
+     * `Init()` method creates an entity with a `Transform` and `Camera`
+     * components, and that entity must be in the `CameraSystem`s set of
+     * entities. */
     auto renderSystem = gCoordinator.RegisterSystem<RenderSystem>();
     {
         Signature signature;
@@ -45,15 +61,17 @@ int main(void)
     }
     renderSystem->Init();
 
-#if 0
+#if 1
     gResourceManager.LoadShader("default",
         "Assets/Shaders/vertex.glsl",
         "Assets/Shaders/fragment.glsl");
 
     Entity entity = gCoordinator.CreateEntity();
-    gCoordinator.AddComponent(entity, Transform{});
+    Transform transform;
+    transform.SetScale(glm::vec3(3.0f));
+    gCoordinator.AddComponent(entity, transform);
     gCoordinator.AddComponent(entity, Renderable{
-        std::make_shared<Model>("Assets/Kenney/Models/OBJformat/banner.obj"),
+        std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wood-structure.obj"),
         gResourceManager.GetShader("default")
     });
 #endif
@@ -62,11 +80,17 @@ int main(void)
     while (!sWindowManager->WindowShouldClose())
     {
         auto startTime = std::chrono::high_resolution_clock::now();
+
         sWindowManager->Update(dt);
+
+        cameraSystem->Update(dt);
         renderSystem->Update(dt);
+
         auto stopTime = std::chrono::high_resolution_clock::now();
-        dt = std::chrono::duration<float, std::chrono::seconds::period>(stopTime - startTime).count();
+        dt = std::chrono::duration<float, std::chrono::seconds::period>
+             (stopTime - startTime).count();
     }
+    cameraSystem->Shutdown();
     renderSystem->Shutdown();
 
     return 0;
