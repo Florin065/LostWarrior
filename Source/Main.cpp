@@ -8,9 +8,11 @@
 #include "Components/Transform.hpp"
 #include "Components/Renderable.hpp"
 #include "Components/Camera.hpp"
+#include "Components/RigidBody.hpp"
 
 #include "Systems/RenderSystem.hpp"
 #include "Systems/CameraSystem.hpp"
+#include "Systems/PhysicsSystem.hpp"
 
 #define GLAD_GL_IMPLEMENTATION
 #include "Core/Window/WindowManager.hpp"
@@ -38,6 +40,7 @@ int main(void)
     gCoordinator.RegisterComponent<Transform>();
     gCoordinator.RegisterComponent<Renderable>();
     gCoordinator.RegisterComponent<Camera>();
+    gCoordinator.RegisterComponent<RigidBody>();
 
     auto cameraSystem = gCoordinator.RegisterSystem<CameraSystem>();
     {
@@ -61,6 +64,15 @@ int main(void)
     }
     renderSystem->Init();
 
+    auto physicsSystem = gCoordinator.RegisterSystem<PhysicsSystem>();
+    {
+        Signature signature;
+        signature.set(gCoordinator.GetComponentType<Transform>());
+        signature.set(gCoordinator.GetComponentType<RigidBody>());
+        gCoordinator.SetSystemSignature<PhysicsSystem>(signature);
+    }
+    physicsSystem->Init();
+
 #if 1
     gResourceManager.LoadShader("default",
         "Assets/Shaders/vertex.glsl",
@@ -70,6 +82,11 @@ int main(void)
     Transform transform;
     transform.SetScale(glm::vec3(3.0f));
     gCoordinator.AddComponent(entity, transform);
+    gCoordinator.AddComponent(entity, RigidBody {
+        glm::vec3(0.2f, 0.0f, 0.0f),
+        glm::vec3(0.0f, -0.1f, 0.0f),
+        glm::vec3(0.2f, 0.2f, 0.0f)
+    });
     gCoordinator.AddComponent(entity, Renderable{
         std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wood-structure.obj"),
         gResourceManager.GetShader("default")
@@ -85,6 +102,7 @@ int main(void)
 
         cameraSystem->Update(dt);
         renderSystem->Update(dt);
+        physicsSystem->Update(dt);
 
         auto stopTime = std::chrono::high_resolution_clock::now();
         dt = std::chrono::duration<float, std::chrono::seconds::period>
@@ -92,6 +110,7 @@ int main(void)
     }
     cameraSystem->Shutdown();
     renderSystem->Shutdown();
+    physicsSystem->Shutdown();
 
     return 0;
 }
