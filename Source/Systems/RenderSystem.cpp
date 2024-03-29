@@ -14,6 +14,13 @@ extern Coordinator gCoordinator;
 
 void RenderSystem::Init()
 {
+    glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+
     {
         Transform cameraT;
         cameraT.SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -34,7 +41,6 @@ void RenderSystem::Shutdown()
 
 void RenderSystem::Update([[maybe_unused]] float dt)
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     auto& cameraC = gCoordinator.GetComponent<Camera>(mCameraEntity);

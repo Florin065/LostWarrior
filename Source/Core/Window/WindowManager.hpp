@@ -37,8 +37,6 @@ public:
 
         glfwSwapInterval(1);
         
-        glDisable(GL_CULL_FACE);
-
         glfwSetInputMode(mWindow.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glViewport(0, 0, width, height);

@@ -9,7 +9,9 @@
 #include "Components/Renderable.hpp"
 #include "Components/Camera.hpp"
 #include "Components/RigidBody.hpp"
+#include "Components/Collider.hpp"
 
+#include "Systems/CollisionSystem.hpp"
 #include "Systems/RenderSystem.hpp"
 #include "Systems/CameraSystem.hpp"
 #include "Systems/PhysicsSystem.hpp"
@@ -41,6 +43,7 @@ int main(void)
     gCoordinator.RegisterComponent<Renderable>();
     gCoordinator.RegisterComponent<Camera>();
     gCoordinator.RegisterComponent<RigidBody>();
+    gCoordinator.RegisterComponent<Collider>();
 
     auto cameraSystem = gCoordinator.RegisterSystem<CameraSystem>();
     {
@@ -73,24 +76,81 @@ int main(void)
     }
     physicsSystem->Init();
 
+    auto collisionSystem = gCoordinator.RegisterSystem<CollisionSystem>();
+    {
+        Signature signature;
+        signature.set(gCoordinator.GetComponentType<Transform>());
+        signature.set(gCoordinator.GetComponentType<Collider>());
+        gCoordinator.SetSystemSignature<CollisionSystem>(signature);
+    }
+    collisionSystem->Init();
+
 #if 1
     gResourceManager.LoadShader("default",
         "Assets/Shaders/vertex.glsl",
         "Assets/Shaders/fragment.glsl");
 
-    Entity entity = gCoordinator.CreateEntity();
-    Transform transform;
-    transform.SetScale(glm::vec3(3.0f));
-    gCoordinator.AddComponent(entity, transform);
-    gCoordinator.AddComponent(entity, RigidBody {
-        glm::vec3(0.2f, 0.0f, 0.0f),
-        glm::vec3(0.0f, -0.1f, 0.0f),
-        glm::vec3(0.2f, 0.2f, 0.0f)
-    });
-    gCoordinator.AddComponent(entity, Renderable{
-        std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wood-structure.obj"),
-        gResourceManager.GetShader("default")
-    });
+    Renderable corner = Renderable {
+       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wall.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    Renderable wall = Renderable {
+       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wall-narrow.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    Renderable tile = Renderable {
+       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/floor.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    Renderable door = Renderable {
+       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wall-opening.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    std::vector<std::vector<int>> map {
+        {2, 4, 4, 4, 4, 6, 4, 4, 2},
+        {5, 0, 0, 0, 0, 0, 0, 0, 5},
+        {5, 0, 0, 0, 0, 0, 0, 0, 5},
+        {5, 0, 0, 0, 0, 0, 0, 0, 5},
+        {5, 0, 0, 0, 0, 0, 0, 0, 5},
+        {5, 0, 0, 0, 0, 0, 0, 0, 7},
+        {5, 0, 0, 0, 0, 0, 0, 0, 5},
+        {2, 4, 4, 4, 4, 4, 4, 4, 2},
+    };
+
+    for (size_t i = 0; i < map.size(); ++i)
+    {
+        for (size_t j = 0; j < map[0].size(); j++)
+        {
+            Entity entity = gCoordinator.CreateEntity();
+
+            Transform transform;
+            transform.Translate({i, 0.0f, j});
+            if (map[i][j] % 2 == 0)
+            {
+                transform.Rotate({0.0f, glm::radians(90.0f), 0.0f});
+            }
+            switch (map[i][j] / 2)
+            {
+            case 0:
+                gCoordinator.AddComponent(entity, tile);
+                break;
+            case 1:
+                gCoordinator.AddComponent(entity, corner);
+                break;
+            case 2:
+                gCoordinator.AddComponent(entity, wall);
+                break;
+            case 3:
+                gCoordinator.AddComponent(entity, door);
+                break;
+            }
+            gCoordinator.AddComponent(entity, transform);
+        }
+    }
 #endif
 
     float dt = 0.0f;

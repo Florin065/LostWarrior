@@ -26,9 +26,14 @@ void PhysicsSystem::Update(float dt)
         auto& transform = gCoordinator.GetComponent<Transform>(entity);   
         auto& rigidBody = gCoordinator.GetComponent<RigidBody>(entity);
 
+        for (auto const& [_, force] : rigidBody.forces)
+        {
+            rigidBody.velocity += rigidBody.mass * force * dt;
+        }
+        rigidBody.velocity -= rigidBody.drag * rigidBody.velocity;
         transform.Translate(rigidBody.velocity * dt);
-        rigidBody.velocity += rigidBody.mass * rigidBody.force * dt;
 
         transform.Rotate(rigidBody.angularVel * dt);
     }
 }
+
