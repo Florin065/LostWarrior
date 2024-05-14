@@ -1,5 +1,6 @@
 #include <chrono>
 #include <glm/glm.hpp>
+#include <random>
 
 #include "Core/Coordinator.hpp"
 #include "Core/Types.hpp"
@@ -24,6 +25,72 @@ ResourceManager gResourceManager;
 
 static auto sWindowManager = std::make_unique<WindowManager>(1920, 1080, "Game");
 
+
+std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int maxWidth, int maxHeight, int maxObstaclesPercentage) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> widthDis(minWidth, maxWidth);
+    std::uniform_int_distribution<> heightDis(minHeight, maxHeight);
+
+    int width = widthDis(gen);
+    int height = heightDis(gen);
+
+    std::vector<std::vector<int>> map(height, std::vector<int>(width, 0));
+
+    // Add walls
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            if (i == 0 || i == height - 1 || j == 0 || j == width - 1) {
+                if ((i == 0 && j == 0) || (i == 0 && j == width - 1) || (i == height - 1 && j == 0) || (i == height - 1 && j == width - 1)) {
+                    map[i][j] = 2;  // Corner
+                } else if (i == 0 || i == height - 1 || j == 0 || j == width - 1) {
+                    map[i][j] = 4;  // Wall up, down, left, right
+                }
+            }
+        }
+    }
+
+    // Add exits (6 - Up, 7 - Right, 8 - Down, 9 - Left)
+    std::uniform_int_distribution<> exitDis(1, 3);
+    int exitCount = exitDis(gen);
+    std::vector<int> exitTypes = {6, 7, 8, 9};
+    std::shuffle(exitTypes.begin(), exitTypes.end(), gen);
+
+    for (int i = 0; i < exitCount; ++i) {
+        int side = exitTypes[i]; // Up, Right, Down, Left
+        switch (side) {
+            case 6: // Up
+                map[0][rand() % (width - 2) + 1] = 6;
+                break;
+            case 7: // Right
+                map[rand() % (height - 2) + 1][width - 1] = 7;
+                break;
+            case 8: // Down
+                map[height - 1][rand() % (width - 2) + 1] = 8;
+                break;
+            case 9: // Left
+                map[rand() % (height - 2) + 1][0] = 9;
+                break;
+        }
+    }
+
+    int maxObstacles = (width - 2) * (height - 2) * maxObstaclesPercentage / 100;
+
+    std::uniform_int_distribution<> obstacleDis(10, 13);
+    int obstacleCount = obstacleDis(gen);
+    obstacleCount = std::min(obstacleCount, maxObstacles);
+
+    while (obstacleCount > 0) {
+        int row = rand() % (height - 2) + 1;
+        int col = rand() % (width - 2) + 1;
+        if (map[row][col] == 0) {
+            map[row][col] = obstacleDis(gen);
+            --obstacleCount;
+        }
+    }
+
+    return map;
+}
 
 void listenerKey(Event const& event)
 {
@@ -91,35 +158,51 @@ int main(void)
         "Assets/Shaders/fragment.glsl");
 
     Renderable corner = Renderable {
-       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wall.obj"),
+       std::make_shared<Model>("Assets/Dungeon/wall.obj"),
        gResourceManager.GetShader("default") 
     };
 
     Renderable wall = Renderable {
-       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wall-narrow.obj"),
+       std::make_shared<Model>("Assets/Dungeon/wall-narrow.obj"),
        gResourceManager.GetShader("default") 
     };
 
     Renderable tile = Renderable {
-       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/floor.obj"),
+       std::make_shared<Model>("Assets/Dungeon/floor.obj"),
        gResourceManager.GetShader("default") 
     };
 
     Renderable door = Renderable {
-       std::make_shared<Model>("Assets/Kenney/Models/OBJformat/wall-opening.obj"),
+       std::make_shared<Model>("Assets/Dungeon/gate.obj"),
        gResourceManager.GetShader("default") 
     };
 
-    std::vector<std::vector<int>> map {
-        {2, 4, 4, 4, 4, 6, 4, 4, 2},
-        {5, 0, 0, 0, 0, 0, 0, 0, 5},
-        {5, 0, 0, 0, 0, 0, 0, 0, 5},
-        {5, 0, 0, 0, 0, 0, 0, 0, 5},
-        {5, 0, 0, 0, 0, 0, 0, 0, 5},
-        {5, 0, 0, 0, 0, 0, 0, 0, 7},
-        {5, 0, 0, 0, 0, 0, 0, 0, 5},
-        {2, 4, 4, 4, 4, 4, 4, 4, 2},
+    Renderable opening = Renderable {
+       std::make_shared<Model>("Assets/Dungeon/wall-opening.obj"),
+       gResourceManager.GetShader("default") 
     };
+
+    Renderable trap = Renderable {
+       std::make_shared<Model>("Assets/Dungeon/trap.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    Renderable barrel = Renderable {
+       std::make_shared<Model>("Assets/Dungeon/barrel.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    Renderable rocks = Renderable {
+       std::make_shared<Model>("Assets/Dungeon/rocks.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    Renderable stones = Renderable {
+       std::make_shared<Model>("Assets/Dungeon/stones.obj"),
+       gResourceManager.GetShader("default") 
+    };
+
+    std::vector<std::vector<int>> map = generateRandomMap(8, 9, 15, 15, 20);
 
     for (size_t i = 0; i < map.size(); ++i)
     {
@@ -129,25 +212,57 @@ int main(void)
 
             Transform transform;
             transform.Translate({i, 0.0f, j});
+
             if (map[i][j] % 2 == 0)
             {
                 transform.Rotate({0.0f, glm::radians(90.0f), 0.0f});
             }
-            switch (map[i][j] / 2)
+            if (map[i][j] == 6 || map[i][j] == 7 || map[i][j] == 8 || map[i][j] == 9)
             {
-            case 0:
-                gCoordinator.AddComponent(entity, tile);
-                break;
-            case 1:
+                transform.Scale({0.4f, 0.4f, 0.4f});
+            }
+            if (map[i][j] == 7 || map[i][j] == 8)
+            {
+                transform.Rotate({0.0f, glm::radians(180.0f), 0.0f});
+            }
+            if (map[i][j] == 9)
+            {
+                transform.Rotate({0.0f, glm::radians(360.0f), 0.0f});
+            }
+
+            switch (map[i][j]) {
+            case 2:
                 gCoordinator.AddComponent(entity, corner);
                 break;
-            case 2:
+            case 4:
+            case 5:
                 gCoordinator.AddComponent(entity, wall);
                 break;
-            case 3:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
                 gCoordinator.AddComponent(entity, door);
                 break;
+            case 10:
+                gCoordinator.AddComponent(entity, trap);
+                break;
+            case 11:
+                gCoordinator.AddComponent(entity, barrel);
+                break;
+            case 12:
+                gCoordinator.AddComponent(entity, rocks);
+                break;
+            case 13:
+                gCoordinator.AddComponent(entity, stones);
+                break;
             }
+            Entity floor = gCoordinator.CreateEntity();
+            Transform floor_transform;
+            floor_transform.Translate({i, 0.0f, j});
+            gCoordinator.AddComponent(floor, tile);
+            gCoordinator.AddComponent(floor, floor_transform);
+
             gCoordinator.AddComponent(entity, transform);
         }
     }
