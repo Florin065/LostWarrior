@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <random>
 
+#include "Components/Player.hpp"
 #include "Core/Coordinator.hpp"
 #include "Core/Types.hpp"
 #include "Core/ResourceManager.hpp"
@@ -13,6 +14,7 @@
 #include "Components/Collider.hpp"
 
 #include "Systems/CollisionSystem.hpp"
+#include "Systems/PlayerSystem.hpp"
 #include "Systems/RenderSystem.hpp"
 #include "Systems/CameraSystem.hpp"
 #include "Systems/PhysicsSystem.hpp"
@@ -50,6 +52,7 @@ int main(void)
     gCoordinator.RegisterComponent<Camera>();
     gCoordinator.RegisterComponent<RigidBody>();
     gCoordinator.RegisterComponent<Collider>();
+    gCoordinator.RegisterComponent<Player>();
 
     auto cameraSystem = gCoordinator.RegisterSystem<CameraSystem>();
     {
@@ -91,11 +94,47 @@ int main(void)
     }
     collisionSystem->Init();
 
+    auto playerSystem = gCoordinator.RegisterSystem<PlayerSystem>();
+    {
+        Signature signature;
+        signature.set(gCoordinator.GetComponentType<Transform>());
+        signature.set(gCoordinator.GetComponentType<RigidBody>());
+        signature.set(gCoordinator.GetComponentType<Renderable>());
+        signature.set(gCoordinator.GetComponentType<Player>());
+        gCoordinator.SetSystemSignature<PlayerSystem>(signature);
+    }
+    playerSystem->Init();
+
     gResourceManager.LoadShader("default",
         "Assets/Shaders/vertex.glsl",
         "Assets/Shaders/fragment.glsl");
 
-    generateEntitiesFromMap(gCoordinator, gResourceManager, dimension, entities);
+    Entity camera = gCoordinator.CreateEntity();
+    {
+        Transform cameraT;
+        cameraT.SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
+        Camera cameraC;
+        gCoordinator.AddComponent(camera, cameraT);
+        gCoordinator.AddComponent(camera, cameraC);
+    }
+
+    Entity player = gCoordinator.CreateEntity();
+    {
+        Transform playerT = Transform {};
+        playerT.SetScale(glm::vec3(0.1f));
+        gCoordinator.AddComponent(player, playerT);
+        gCoordinator.AddComponent(player, RigidBody {
+            .drag = 0.04f
+        });
+        gCoordinator.AddComponent(player, Renderable {
+            std::make_shared<Model>("Assets/Models/knightRed.obj"),
+            gResourceManager.GetShader("default") 
+        });
+        gCoordinator.AddComponent(player, Player { camera });
+        renderSystem->SwapCamera(camera);
+    }
+
+    generateEntitiesFromMap(gCoordinator, gResourceManager, dimension, entities, player);
 
     gCoordinator.LogInfo("Entities created: ", entities.size());
 
@@ -115,6 +154,7 @@ int main(void)
         cameraSystem->Update(dt);
         renderSystem->Update(dt);
         physicsSystem->Update(dt);
+        playerSystem->Update(dt);
 
         auto stopTime = std::chrono::high_resolution_clock::now();
         dt = std::chrono::duration<float, std::chrono::seconds::period>

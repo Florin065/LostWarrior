@@ -19,9 +19,9 @@ extern Coordinator gCoordinator;
 
 void CameraSystem::Init()
 {
-    gCoordinator.AddListener(METHOD_LISTENER(
-        Events::Input::Sync::Key::ID,
-        CameraSystem::FreecamKeyListener));
+    // gCoordinator.AddListener(METHOD_LISTENER(
+    //     Events::Input::Sync::Key::ID,
+    //     CameraSystem::FreecamKeyListener));
     gCoordinator.AddListener(METHOD_LISTENER(
         Events::Input::Cursor::ID,
         CameraSystem::FreecamCursorListener));
@@ -85,8 +85,8 @@ void CameraSystem::FreecamCursorListener(Event const& event)
         auto& camera = gCoordinator.GetComponent<Camera>(entity);
         camera.direction = glm::rotate(camera.direction, -sensitivity * dx,
                                        camera.up);
-        camera.direction = glm::rotate(camera.direction, -sensitivity * dy,
-                                       glm::cross(camera.up, camera.direction));
+        // camera.direction = glm::rotate(camera.direction, -sensitivity * dy,
+        //                                glm::cross(camera.up, camera.direction));
     }
 }
 
@@ -100,7 +100,8 @@ void CameraSystem::Update(float dt)
         auto& camera    = gCoordinator.GetComponent<Camera>(entity);
 
         camera.view = glm::lookAt(transform.__pos,
-                                  transform.__pos + camera.direction,
+                                  transform.__pos +
+                                      glm::normalize(camera.direction),
                                   camera.up);
         camera.projection = glm::perspective(glm::radians(60.0f),
                                              1920.0f / 1080.0f,

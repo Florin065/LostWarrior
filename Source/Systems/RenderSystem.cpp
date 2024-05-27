@@ -24,14 +24,18 @@ void RenderSystem::Init()
     {
         Transform cameraT;
         cameraT.SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
-
         Camera cameraC;
-
         mCameraEntity = gCoordinator.CreateEntity();
         gCoordinator.AddComponent(mCameraEntity, cameraT);
         gCoordinator.AddComponent(mCameraEntity, cameraC);
         gCoordinator.LogInfo("Initial camera created!");
     }
+}
+
+void RenderSystem::SwapCamera(Entity camera)
+{
+    gCoordinator.DestroyEntity(mCameraEntity);
+    mCameraEntity = camera;
 }
 
 void RenderSystem::Shutdown()

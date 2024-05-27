@@ -10,6 +10,7 @@ public:
     void Init();
     void Shutdown();
     void Update(float dt);
+    void SwapCamera(Entity camera);
 
 private:
     Entity mCameraEntity;
