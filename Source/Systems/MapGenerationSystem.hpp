@@ -10,5 +10,7 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                              ResourceManager& gResourceManager,
                              int dimension,
                              std::vector<Entity>& entities,
-                             Entity player);
+                             Entity player,
+                             int completion,
+                             std::vector<Entity>& doors);
 

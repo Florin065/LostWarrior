@@ -29,7 +29,10 @@ Coordinator gCoordinator(LogLevel::NORMAL);
 ResourceManager gResourceManager;
 
 int dimension = 1;
+Entity player;
 std::vector<Entity> entities;
+std::vector<Entity> doors;
+int completion = 0;
 
 static auto sWindowManager = std::make_unique<WindowManager>(1920, 1080, "Game");
 
@@ -42,12 +45,47 @@ void listenerKey(Event const& event)
     }
 }
 
+void listenerRoomCleared([[maybe_unused]] Event const& event)
+{
+    if (completion <= 20)
+    {
+        for (auto& entity: doors)
+        {
+            gCoordinator.LogInfo("Changing door with id ", entity);
+            Renderable& doorRenderable = gCoordinator.GetComponent<Renderable>(entity);
+            doorRenderable.model = gResourceManager.GetModel("Assets/Dungeon/wall-opening.obj");
+            Collider& doorCol = gCoordinator.GetComponent<Collider>(entity);
+            doorCol.width = 1.0f;
+            doorCol.length = 1.0f;
+            doorCol.name = "open_door";
+        }
+    }
+    else
+    {
+        printf("You win!\n");
+        exit(69);
+    }
+    
+    gCoordinator.LogInfo("Entities created: ", entities.size());
+}
+
+void enemyKilledUpdateEntities(Event const& event)
+{
+    gCoordinator.LogInfo("Enemy killed!");
+    Entity enemy = event.GetParam<Entity>(Events::Game::KilledEnemy::ENTITY_ID);
+    entities.erase(std::remove(entities.begin(), entities.end(), enemy), entities.end());
+}
+
 
 int main(void)
 {
 
     gCoordinator.AddListener(FUNCTION_LISTENER(Events::Input::Async::Key::ID,
                                                listenerKey));
+    gCoordinator.AddListener(FUNCTION_LISTENER(Events::Game::RoomCleared::ID,
+                                               listenerRoomCleared));
+    gCoordinator.AddListener(FUNCTION_LISTENER(Events::Game::KilledEnemy::ID,
+                                               enemyKilledUpdateEntities));
 
     gCoordinator.RegisterComponent<Transform>();
     gCoordinator.RegisterComponent<Renderable>();
@@ -132,7 +170,7 @@ int main(void)
         gCoordinator.AddComponent(camera, cameraC);
     }
 
-    Entity player = gCoordinator.CreateEntity();
+    player = gCoordinator.CreateEntity();
     {
         Transform playerT = Transform {};
         playerT.SetScale(glm::vec3(1.0f));
@@ -141,23 +179,17 @@ int main(void)
             .drag = 0.04f
         });
         gCoordinator.AddComponent(player, Renderable {
-            std::make_shared<Model>("Assets/kenney_graveyard-kit/Models/OBJ format/character-vampire.obj"),
+            gResourceManager.GetModel("Assets/kenney_graveyard-kit/Models/OBJ format/character-vampire.obj"),
             gResourceManager.GetShader("default") 
         });
         gCoordinator.AddComponent(player, Player { camera });
-        gCoordinator.AddComponent(player, Collider { .layer = ColliderLayer::COLLIDER_PHYSICAL, .length = 0.1f, .width = 0.1f});
+        gCoordinator.AddComponent(player, Collider { .name = "player", .layer = ColliderLayer::COLLIDER_PHYSICAL, .length = 0.5f, .width = 0.5f, .health = 10.0f, .damage = 0.0f});
         renderSystem->SwapCamera(camera);
     }
 
-    generateEntitiesFromMap(gCoordinator, gResourceManager, dimension, entities, player);
+    generateEntitiesFromMap(gCoordinator, gResourceManager, dimension, entities, player, completion, doors);
 
     gCoordinator.LogInfo("Entities created: ", entities.size());
-
-    // for (auto& entity : entities)
-    // {
-    //     gCoordinator.LogInfo("Destroying entity ", entity);
-    //     gCoordinator.DestroyEntity(entity);
-    // }
 
     float dt = 0.0f;
     while (!sWindowManager->WindowShouldClose())
