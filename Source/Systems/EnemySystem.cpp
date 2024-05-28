@@ -31,8 +31,11 @@ void EnemySystem::Shutdown()
 
 void EnemySystem::Update(float dt)
 {
+    int enemyCount = 0;
+
     for (auto const& entity : mEntities)
     {
+        enemyCount++;
         auto& rigidBody = gCoordinator.GetComponent<RigidBody>(entity);
         auto& transform = gCoordinator.GetComponent<Transform>(entity);
         auto& enemy     = gCoordinator.GetComponent<Enemy>(entity);
@@ -42,7 +45,19 @@ void EnemySystem::Update(float dt)
 
         glm::vec3 dir = glm::normalize(playerPos - enemyPos);
 
-        gCoordinator.LogInfo("dir: ", dir.x, " ", dir.y, " ", dir.z);
-        rigidBody.velocity = dir * 0.3f;
+        gCoordinator.LogDebug("dir: ", dir.x, " ", dir.y, " ", dir.z);
+        if (glm::distance(playerPos, enemyPos) > 0.3f)
+        {
+            rigidBody.velocity = dir * 0.3f;
+        }
     }
+
+    if (enemyCount == 0 && roomChangeCd <= 0)
+    {
+        roomChangeCd = ROOM_CHANGE_TIMER;
+        Event e(Events::Game::RoomCleared::ID);
+        gCoordinator.SendEvent(e);
+    }
+
+    roomChangeCd -= dt;
 }

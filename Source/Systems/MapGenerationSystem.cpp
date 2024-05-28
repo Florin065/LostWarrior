@@ -13,7 +13,7 @@
 #include "Components/Enemy.hpp"
 
 
-std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int maxWidth, int maxHeight, int maxObstaclesPercentage) {
+std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int maxWidth, int maxHeight, int maxObstaclesPercentage, int maxEnemiesPercentage) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> widthDis(minWidth, maxWidth);
@@ -102,7 +102,7 @@ std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int
     }
 
     // Add enemies (20 - 23)
-    int maxEnemies = (width - 2) * (height - 2) * 10 / 100; // Let's assume maxEnemiesPercentage is 10%
+    int maxEnemies = (width - 2) * (height - 2) * maxEnemiesPercentage / 100;
     std::uniform_int_distribution<> enemyDis(15, 16);
     int enemyCount = std::uniform_int_distribution<>(1, maxEnemies)(gen);
 
@@ -123,66 +123,70 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                              ResourceManager& gResourceManager,
                              int dimension,
                              std::vector<Entity>& entities,
-                             Entity player)
+                             Entity player,
+                             int completion,
+                             std::vector<Entity>& doors)
 {
-    Renderable corner, wall, tile, door, opening, trap, object, rocks, stones, enemy_type1, enemy_type2;
-    std::vector<std::vector<int>> map = generateRandomMap(8, 9, 15, 15, 60);
+    Renderable corner, wall, tile, door, opening, trap, object, rocks, stones, enemy_digger, enemy_skeleton;
+
+    std::vector<std::vector<int>> map = generateRandomMap(8, 9, 15, 15, 60, completion + 5);
+
 
     bool playerSpawned = false;
 
     if (dimension == 1) {
         corner = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/wall.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/wall.obj"),
         gResourceManager.GetShader("default") 
         };
 
         wall = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/wall-narrow.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/wall-narrow.obj"),
         gResourceManager.GetShader("default") 
         };
 
         tile = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/floor.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/floor.obj"),
         gResourceManager.GetShader("default") 
         };
 
         door = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/gate.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/gate.obj"),
         gResourceManager.GetShader("default") 
         };
 
         opening = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/wall-opening.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/wall-opening.obj"),
         gResourceManager.GetShader("default") 
         };
 
         trap = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/trap.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/trap.obj"),
         gResourceManager.GetShader("default") 
         };
 
         object = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/barrel.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/barrel.obj"),
         gResourceManager.GetShader("default") 
         };
 
         rocks = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/rocks.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/rocks.obj"),
         gResourceManager.GetShader("default") 
         };
 
         stones = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/stones.obj"),
+        gResourceManager.GetModel("Assets/Dungeon/stones.obj"),
         gResourceManager.GetShader("default") 
         };
 
-        enemy_type1 = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/character-ghost.obj"),
+        enemy_digger = Renderable {
+        gResourceManager.GetModel("Assets/Dungeon/character-ghost.obj"),
         gResourceManager.GetShader("default") 
         };
 
-        enemy_type2 = Renderable {
-        std::make_shared<Model>("Assets/Dungeon/character-zombie.obj"),
+        enemy_skeleton = Renderable {
+        gResourceManager.GetModel("Assets/Dungeon/character-zombie.obj"),
         gResourceManager.GetShader("default") 
         };
 
@@ -196,57 +200,57 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
         map[rows - 1][cols - 1] = 1;
 
         corner = Renderable {
-        std::make_shared<Model>("Assets/Arena/wall-corner.obj"),
+        gResourceManager.GetModel("Assets/Arena/wall-corner.obj"),
         gResourceManager.GetShader("default") 
         };
 
         wall = Renderable {
-        std::make_shared<Model>("Assets/Arena/wall.obj"),
+        gResourceManager.GetModel("Assets/Arena/wall.obj"),
         gResourceManager.GetShader("default") 
         };
 
         tile = Renderable {
-        std::make_shared<Model>("Assets/Arena/floor.obj"),
+        gResourceManager.GetModel("Assets/Arena/floor.obj"),
         gResourceManager.GetShader("default") 
         };
 
         door = Renderable {
-        std::make_shared<Model>("Assets/Arena/wall-gate.obj"),
+        gResourceManager.GetModel("Assets/Arena/wall-gate.obj"),
         gResourceManager.GetShader("default") 
         };
 
         opening = Renderable {
-        std::make_shared<Model>("Assets/Arena/wall-gate.obj"),
+        gResourceManager.GetModel("Assets/Arena/wall-gate.obj"),
         gResourceManager.GetShader("default") 
         };
 
         trap = Renderable {
-        std::make_shared<Model>("Assets/Arena/weapon-spear.obj"),
+        gResourceManager.GetModel("Assets/Arena/weapon-spear.obj"),
         gResourceManager.GetShader("default") 
         };
 
         object = Renderable {
-        std::make_shared<Model>("Assets/Arena/statue.obj"),
+        gResourceManager.GetModel("Assets/Arena/statue.obj"),
         gResourceManager.GetShader("default") 
         };
 
         rocks = Renderable {
-        std::make_shared<Model>("Assets/Arena/column-damaged.obj"),
+        gResourceManager.GetModel("Assets/Arena/column-damaged.obj"),
         gResourceManager.GetShader("default") 
         };
 
         stones = Renderable {
-        std::make_shared<Model>("Assets/Arena/bricks.obj"),
+        gResourceManager.GetModel("Assets/Arena/bricks.obj"),
         gResourceManager.GetShader("default") 
         };
 
-        enemy_type1 = Renderable {
-        std::make_shared<Model>("Assets/Arena/character-digger.obj"),
+        enemy_digger = Renderable {
+        gResourceManager.GetModel("Assets/Arena/character-digger.obj"),
         gResourceManager.GetShader("default") 
         };
 
-        enemy_type2 = Renderable {
-        std::make_shared<Model>("Assets/Arena/character-skeleton.obj"),
+        enemy_skeleton = Renderable {
+        gResourceManager.GetModel("Assets/Arena/character-skeleton.obj"),
         gResourceManager.GetShader("default") 
         };
     }
@@ -255,13 +259,24 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
     {
         for (size_t j = 0; j < map[0].size(); j++)
         {
+            Entity floor = gCoordinator.CreateEntity();
+            Transform floor_transform;
+            floor_transform.Translate({i, 0.0f, j});
+            gCoordinator.AddComponent(floor, tile);
+            gCoordinator.AddComponent(floor, floor_transform);
+            entities.push_back(floor);
+
+            if (map[i][j] == 0)
+            {
+                continue;
+            }
+
             Entity entity = gCoordinator.CreateEntity();
 
             Transform transform;
             transform.Translate({i, 0.0f, j});
-
-            gCoordinator.AddComponent(entity, Collider { .layer = ColliderLayer::COLLIDER_PHYSICAL, .length = 0.3f, .width = 0.3f});
-            gCoordinator.AddComponent(entity, RigidBody { .mass = 99999.0f });
+            RigidBody rb = RigidBody { .mass = 99999.0f };
+            Collider col = Collider { .name = "entity" + std::to_string(entity), .layer = ColliderLayer::COLLIDER_PHYSICAL, .length = 1.0f, .width = 1.0f};
 
             if (map[i][j] % 2 == 0)
             {
@@ -286,10 +301,14 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
             case 3:
             case 14:
                 gCoordinator.AddComponent(entity, corner);
+                col.name = "corner" + std::to_string(entity);
+                col.length = 1.5f; col.width = 1.5f, col.damage = 0.0f; col.health = 99999.0f;
                 break;
             case 4:
             case 5:
                 gCoordinator.AddComponent(entity, wall);
+                col.name = "wall" + std::to_string(entity);
+                col.length = 1.5f; col.width = 1.5f , col.damage = 0.0f; col.health = 99999.0f;
                 break;
             case 6:
             case 7:
@@ -320,7 +339,7 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                         playerPos = glm::vec3(i, 0.0f, j - 1);
                     }
 
-                    playerT.Translate({playerPos});
+                    playerT.SetPosition({playerPos});
                     playerRb.velocity = glm::vec3(0.0f);
 
                     auto& cameraC = gCoordinator.GetComponent<Camera>(playerP.camera);
@@ -332,42 +351,60 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                     cameraC.direction = glm::normalize(dirXZ);
 
                     playerSpawned = true;
+                    gCoordinator.AddComponent(entity, door);
                 } else {
                     gCoordinator.AddComponent(entity, door);
+                    doors.push_back(entity);
+                    gCoordinator.LogInfo("Added door ", entity);
                 }
+                col.name = "door" + std::to_string(entity);
+                col.damage = 0.0f; col.health = 99999.0f;
                 break;
             case 10:
                 gCoordinator.AddComponent(entity, trap);
+                col.name = "trap" + std::to_string(entity);
+                col.health = 99999.0f;
                 break;
             case 11:
                 gCoordinator.AddComponent(entity, object);
+                col.name = "object" + std::to_string(entity);
+                col.damage = 0.0f; col.health = 99999.0f;
                 break;
             case 12:
                 gCoordinator.AddComponent(entity, rocks);
+                col.name = "rocks" + std::to_string(entity);
+                col.damage = 0.0f; col.health = 99999.0f;
                 break;
             case 13:
                 gCoordinator.AddComponent(entity, stones);
+                col.name = "stones" + std::to_string(entity);
+                col.damage = 0.0f; col.health = 99999.0f;
                 break;
             case 15:
-                gCoordinator.AddComponent(entity, enemy_type1);
+                gCoordinator.AddComponent(entity, enemy_digger);
                 gCoordinator.AddComponent(entity, Enemy { player });
+                col.name = "digger" + std::to_string(entity);
+                col.length = 0.5f;
+                col.width = 0.5f;
+                rb.angularVel = glm::vec3(0.0f, 1.0f, 0.0f);
                 break;
             case 16:
-                gCoordinator.AddComponent(entity, enemy_type2);
+                gCoordinator.AddComponent(entity, enemy_skeleton);
                 gCoordinator.AddComponent(entity, Enemy { player });
+                col.name = "skeleton" + std::to_string(entity);
+                col.length = 0.5f;
+                col.width = 0.5f;
+                rb.angularVel = glm::vec3(0.0f, 1.5f, 0.0f);
                 break;
+            default:
+                col.name = "unknown" + std::to_string(map[i][j]);
             }
-
-            Entity floor = gCoordinator.CreateEntity();
-            Transform floor_transform;
-            floor_transform.Translate({i, 0.0f, j});
-            gCoordinator.AddComponent(floor, tile);
-            gCoordinator.AddComponent(floor, floor_transform);
-
+            gCoordinator.AddComponent(entity, rb);
+            gCoordinator.AddComponent(entity, col);
             gCoordinator.AddComponent(entity, transform);
-
             entities.push_back(entity);
-            entities.push_back(floor);
         }
     }
+    gCoordinator.LogInfo("Created map");
 }
+

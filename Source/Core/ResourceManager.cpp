@@ -33,6 +33,16 @@ std::shared_ptr<Shader> ResourceManager::GetShader(std::string const& name)
     }
 }
 
+std::shared_ptr<Model> ResourceManager::GetModel(std::string const& path)
+{
+    try {
+        return mModels.at(path);
+    } catch (std::out_of_range const& e) {
+        mModels[path] = std::make_shared<Model>(path);
+        return mModels[path];
+    }
+}
+
 unsigned int ResourceManager::LoadTexture(std::string const& path,
                                           std::string const& directory)
 {
