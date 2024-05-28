@@ -3,6 +3,7 @@
 #include <random>
 
 #include "Components/Player.hpp"
+#include "Components/Enemy.hpp"
 #include "Core/Coordinator.hpp"
 #include "Core/Types.hpp"
 #include "Core/ResourceManager.hpp"
@@ -15,6 +16,7 @@
 
 #include "Systems/CollisionSystem.hpp"
 #include "Systems/PlayerSystem.hpp"
+#include "Systems/EnemySystem.hpp"
 #include "Systems/RenderSystem.hpp"
 #include "Systems/CameraSystem.hpp"
 #include "Systems/PhysicsSystem.hpp"
@@ -53,6 +55,7 @@ int main(void)
     gCoordinator.RegisterComponent<RigidBody>();
     gCoordinator.RegisterComponent<Collider>();
     gCoordinator.RegisterComponent<Player>();
+    gCoordinator.RegisterComponent<Enemy>();
 
     auto cameraSystem = gCoordinator.RegisterSystem<CameraSystem>();
     {
@@ -105,6 +108,17 @@ int main(void)
     }
     playerSystem->Init();
 
+    auto enemySystem = gCoordinator.RegisterSystem<EnemySystem>();
+    {
+        Signature signature;
+        signature.set(gCoordinator.GetComponentType<Transform>());
+        signature.set(gCoordinator.GetComponentType<RigidBody>());
+        signature.set(gCoordinator.GetComponentType<Renderable>());
+        signature.set(gCoordinator.GetComponentType<Enemy>());
+        gCoordinator.SetSystemSignature<EnemySystem>(signature);
+    }
+    enemySystem->Init();
+
     gResourceManager.LoadShader("default",
         "Assets/Shaders/vertex.glsl",
         "Assets/Shaders/fragment.glsl");
@@ -121,16 +135,17 @@ int main(void)
     Entity player = gCoordinator.CreateEntity();
     {
         Transform playerT = Transform {};
-        playerT.SetScale(glm::vec3(0.1f));
+        playerT.SetScale(glm::vec3(1.0f));
         gCoordinator.AddComponent(player, playerT);
         gCoordinator.AddComponent(player, RigidBody {
             .drag = 0.04f
         });
         gCoordinator.AddComponent(player, Renderable {
-            std::make_shared<Model>("Assets/Models/knightRed.obj"),
+            std::make_shared<Model>("Assets/kenney_graveyard-kit/Models/OBJ format/character-vampire.obj"),
             gResourceManager.GetShader("default") 
         });
         gCoordinator.AddComponent(player, Player { camera });
+        gCoordinator.AddComponent(player, Collider { .layer = ColliderLayer::COLLIDER_PHYSICAL, .length = 0.1f, .width = 0.1f});
         renderSystem->SwapCamera(camera);
     }
 
@@ -155,6 +170,8 @@ int main(void)
         renderSystem->Update(dt);
         physicsSystem->Update(dt);
         playerSystem->Update(dt);
+        collisionSystem->Update(dt);
+        enemySystem->Update(dt);
 
         auto stopTime = std::chrono::high_resolution_clock::now();
         dt = std::chrono::duration<float, std::chrono::seconds::period>

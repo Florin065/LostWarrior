@@ -3,12 +3,14 @@
 #include <algorithm>
 
 #include "Components/Camera.hpp"
+#include "Components/Collider.hpp"
 #include "Components/Player.hpp"
 #include "Components/RigidBody.hpp"
 #include "Components/Transform.hpp"
 #include "Components/Renderable.hpp"
 #include "Core/Coordinator.hpp"
 #include "Core/ResourceManager.hpp"
+#include "Components/Enemy.hpp"
 
 
 std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int maxWidth, int maxHeight, int maxObstaclesPercentage) {
@@ -38,26 +40,40 @@ std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int
     }
 
     // Add exits (6 - Up, 7 - Right, 8 - Down, 9 - Left)
-    std::uniform_int_distribution<> exitDis(2, 3);
+    std::uniform_int_distribution<> exitDis(2, 4);
     int exitCount = exitDis(gen);
     std::vector<int> exitTypes = {6, 7, 8, 9};
     std::shuffle(exitTypes.begin(), exitTypes.end(), gen);
 
+    std::vector<std::pair<int, int>> exitPositions;
+
     for (int i = 0; i < exitCount; ++i) {
         int side = exitTypes[i]; // Up, Right, Down, Left
         switch (side) {
-            case 6: // Up
-                map[0][rand() % (width - 2) + 1] = 6;
+            case 6: { // Up
+                int pos = rand() % (width - 2) + 1;
+                map[0][pos] = 6;
+                exitPositions.push_back({0, pos});
                 break;
-            case 7: // Right
-                map[rand() % (height - 2) + 1][width - 1] = 7;
+            }
+            case 7: { // Right
+                int pos = rand() % (height - 2) + 1;
+                map[pos][width - 1] = 7;
+                exitPositions.push_back({pos, width - 1});
                 break;
-            case 8: // Down
-                map[height - 1][rand() % (width - 2) + 1] = 8;
+            }
+            case 8: { // Down
+                int pos = rand() % (width - 2) + 1;
+                map[height - 1][pos] = 8;
+                exitPositions.push_back({height - 1, pos});
                 break;
-            case 9: // Left
-                map[rand() % (height - 2) + 1][0] = 9;
+            }
+            case 9: { // Left
+                int pos = rand() % (height - 2) + 1;
+                map[pos][0] = 9;
+                exitPositions.push_back({pos, 0});
                 break;
+            }
         }
     }
 
@@ -70,9 +86,33 @@ std::vector<std::vector<int>> generateRandomMap(int minWidth, int minHeight, int
     while (obstacleCount > 0) {
         int row = rand() % (height - 2) + 1;
         int col = rand() % (width - 2) + 1;
-        if (map[row][col] == 0) {
+
+        bool adjacentToExit = false;
+        for (const auto& exitPos : exitPositions) {
+            if (std::abs(exitPos.first - row) <= 1 && std::abs(exitPos.second - col) <= 1) {
+                adjacentToExit = true;
+                break;
+            }
+        }
+
+        if (!adjacentToExit && map[row][col] == 0) {
             map[row][col] = obstacleDis(gen);
             --obstacleCount;
+        }
+    }
+
+    // Add enemies (20 - 23)
+    int maxEnemies = (width - 2) * (height - 2) * 10 / 100; // Let's assume maxEnemiesPercentage is 10%
+    std::uniform_int_distribution<> enemyDis(15, 16);
+    int enemyCount = std::uniform_int_distribution<>(1, maxEnemies)(gen);
+
+    while (enemyCount > 0) {
+        int row = rand() % (height - 2) + 1;
+        int col = rand() % (width - 2) + 1;
+
+        if (map[row][col] == 0) {
+            map[row][col] = enemyDis(gen);
+            --enemyCount;
         }
     }
 
@@ -85,7 +125,7 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                              std::vector<Entity>& entities,
                              Entity player)
 {
-    Renderable corner, wall, tile, door, opening, trap, object, rocks, stones;
+    Renderable corner, wall, tile, door, opening, trap, object, rocks, stones, enemy_type1, enemy_type2;
     std::vector<std::vector<int>> map = generateRandomMap(8, 9, 15, 15, 60);
 
     bool playerSpawned = false;
@@ -135,6 +175,17 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
         std::make_shared<Model>("Assets/Dungeon/stones.obj"),
         gResourceManager.GetShader("default") 
         };
+
+        enemy_type1 = Renderable {
+        std::make_shared<Model>("Assets/Dungeon/character-ghost.obj"),
+        gResourceManager.GetShader("default") 
+        };
+
+        enemy_type2 = Renderable {
+        std::make_shared<Model>("Assets/Dungeon/character-zombie.obj"),
+        gResourceManager.GetShader("default") 
+        };
+
     } else {
         int rows = map.size();
         int cols = map[0].size();
@@ -188,6 +239,16 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
         std::make_shared<Model>("Assets/Arena/bricks.obj"),
         gResourceManager.GetShader("default") 
         };
+
+        enemy_type1 = Renderable {
+        std::make_shared<Model>("Assets/Arena/character-digger.obj"),
+        gResourceManager.GetShader("default") 
+        };
+
+        enemy_type2 = Renderable {
+        std::make_shared<Model>("Assets/Arena/character-skeleton.obj"),
+        gResourceManager.GetShader("default") 
+        };
     }
 
     for (size_t i = 0; i < map.size(); ++i)
@@ -198,6 +259,9 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
 
             Transform transform;
             transform.Translate({i, 0.0f, j});
+
+            gCoordinator.AddComponent(entity, Collider { .layer = ColliderLayer::COLLIDER_PHYSICAL, .length = 0.3f, .width = 0.3f});
+            gCoordinator.AddComponent(entity, RigidBody { .mass = 99999.0f });
 
             if (map[i][j] % 2 == 0)
             {
@@ -231,14 +295,32 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
             case 7:
             case 8:
             case 9:
-                gCoordinator.AddComponent(entity, door);
                 if (!playerSpawned)
                 {
                     auto& playerT = gCoordinator.GetComponent<Transform>(player);
                     auto& playerRb = gCoordinator.GetComponent<RigidBody>(player);
                     auto& playerP = gCoordinator.GetComponent<Player>(player);
 
-                    playerT.Translate({i, 0.0f, j});
+                    glm::vec3 playerPos;
+
+                    if (i == 0)
+                    {
+                        playerPos = glm::vec3(i + 1, 0.0f, j);
+                    }
+                    else if (i == map.size() - 1)
+                    {
+                        playerPos = glm::vec3(i - 1, 0.0f, j);
+                    }
+                    else if (j == 0)
+                    {
+                        playerPos = glm::vec3(i, 0.0f, j + 1);
+                    }
+                    else if (j == map[0].size() - 1)
+                    {
+                        playerPos = glm::vec3(i, 0.0f, j - 1);
+                    }
+
+                    playerT.Translate({playerPos});
                     playerRb.velocity = glm::vec3(0.0f);
 
                     auto& cameraC = gCoordinator.GetComponent<Camera>(playerP.camera);
@@ -250,6 +332,8 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                     cameraC.direction = glm::normalize(dirXZ);
 
                     playerSpawned = true;
+                } else {
+                    gCoordinator.AddComponent(entity, door);
                 }
                 break;
             case 10:
@@ -263,6 +347,14 @@ void generateEntitiesFromMap(Coordinator& gCoordinator,
                 break;
             case 13:
                 gCoordinator.AddComponent(entity, stones);
+                break;
+            case 15:
+                gCoordinator.AddComponent(entity, enemy_type1);
+                gCoordinator.AddComponent(entity, Enemy { player });
+                break;
+            case 16:
+                gCoordinator.AddComponent(entity, enemy_type2);
+                gCoordinator.AddComponent(entity, Enemy { player });
                 break;
             }
 
