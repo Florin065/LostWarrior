@@ -23,6 +23,11 @@ extern Coordinator gCoordinator;
 extern ResourceManager gResourceManager;
 
 
+float playerArrowCd = PLAYER_ARROW_CD;
+
+extern int completion;
+
+
 void PlayerSystem::Init()
 {
     gCoordinator.AddListener(METHOD_LISTENER(
@@ -70,7 +75,7 @@ void PlayerSystem::KeyListener(Event const& event)
 
         if (dir != glm::vec3(0.0f))
         {
-            rigidBody.forces["Push"] = 20.0f * glm::normalize(dir);
+            rigidBody.forces["Push"] = 15.0f * glm::normalize(dir);
         }
 
         if (keys[GLFW_KEY_SPACE] && playerP.cooldown <= 0.0f)
@@ -78,7 +83,7 @@ void PlayerSystem::KeyListener(Event const& event)
             Entity arrow = gCoordinator.CreateEntity();
             Transform arrowTransform = transform;
             RigidBody arrowRigidBody = rigidBody;
-            arrowRigidBody.velocity += 3.0f * playerP.direction;
+            arrowRigidBody.velocity += 3.0f * glm::rotate(playerP.direction, 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
             arrowRigidBody.angularVel = glm::vec3(0.0f, 10.0f, 0.0f);
             arrowRigidBody.drag = 0.0001f;
             arrowTransform.Translate(playerP.direction);
@@ -100,7 +105,38 @@ void PlayerSystem::KeyListener(Event const& event)
                 .damage = 0.5f,
                 .projectile = true
             });
-            playerP.cooldown = PLAYER_ARROW_CD;
+            playerP.cooldown = playerArrowCd;
+
+            if (completion < 15) return;
+
+            for (float ang = -0.4f; ang < 0.41f; ang += 0.8f)
+            {
+                Entity arrow = gCoordinator.CreateEntity();
+                Transform arrowTransform = transform;
+                RigidBody arrowRigidBody = rigidBody;
+                arrowRigidBody.velocity += 3.0f * glm::rotate(playerP.direction, ang, glm::vec3(0.0f, 1.0f, 0.0f));
+                arrowRigidBody.angularVel = glm::vec3(0.0f, 10.0f, 0.0f);
+                arrowRigidBody.drag = 0.0001f;
+                arrowTransform.Translate(playerP.direction);
+                arrowTransform.SetScale(glm::vec3(0.5f));
+                gCoordinator.AddComponent<Transform>(arrow, arrowTransform);
+                gCoordinator.AddComponent<RigidBody>(arrow, arrowRigidBody);
+                Renderable arrowRenderable = Renderable {
+                    gResourceManager.GetModel("Assets/kenney_graveyard-kit/Models/OBJ format/cross.obj"),
+                    gResourceManager.GetShader("default") 
+                };
+                
+                gCoordinator.AddComponent<Renderable>(arrow, arrowRenderable);
+                gCoordinator.AddComponent<Collider>(arrow, Collider {
+                    .name = "arrow",
+                    .layer = ColliderLayer::COLLIDER_PHYSICAL,
+                    .length = 0.1f,
+                    .width = 0.1f,
+                    .health = 1.0f,
+                    .damage = 0.5f,
+                    .projectile = true
+                });
+            }
         }
     }
 }

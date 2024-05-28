@@ -34,6 +34,9 @@ std::vector<Entity> entities;
 std::vector<Entity> doors;
 int completion = 0;
 
+
+extern float playerArrowCd;
+
 static auto sWindowManager = std::make_unique<WindowManager>(1920, 1080, "Game");
 
 
@@ -47,6 +50,8 @@ void listenerKey(Event const& event)
 
 void listenerRoomCleared([[maybe_unused]] Event const& event)
 {
+    playerArrowCd *= 0.9;
+
     if (completion <= 20)
     {
         for (auto& entity: doors)
